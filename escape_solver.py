@@ -88,30 +88,71 @@ class EscapeRoomSolver:
         """Detect if text might be a Caesar cipher."""
         # Look for text with unusual letter frequency
         letters_only = re.sub(r'[^A-Za-z]', '', text)
-        if len(letters_only) < 10:
+        if len(letters_only) < 5:
             return False
 
-        # Check for low vowel ratio (encrypted text often has this)
-        vowels = sum(1 for c in letters_only.lower() if c in 'aeiou')
-        vowel_ratio = vowels / len(letters_only)
-        return vowel_ratio < 0.25 or vowel_ratio > 0.6
+        # If text has common question words or is very long, probably not a cipher
+        if any(word in text.lower() for word in ['what', 'who', 'where', 'when', 'why', 'how']):
+            return False
+
+        # If text is too long (> 100 chars), probably not a simple Caesar cipher
+        if len(text) > 100:
+            return False
+
+        # Check if it's mostly uppercase (common for ciphers)
+        mostly_caps = sum(1 for c in text if c.isupper()) / len(text) if len(text) > 0 else 0
+
+        # If it's mostly caps and doesn't contain common English words, try it
+        if mostly_caps > 0.7:
+            common_words = {'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all',
+                           'can', 'her', 'was', 'one', 'our', 'out', 'has', 'have',
+                           'that', 'with', 'from', 'this', 'will', 'your'}
+            text_lower = text.lower()
+            if not any(word in text_lower for word in common_words):
+                return True
+
+        return False
 
     def _detect_substitution(self, text: str) -> bool:
         """Detect if text might be a substitution cipher."""
         # Similar to Caesar but more general
         letters_only = re.sub(r'[^A-Za-z]', '', text)
-        if len(letters_only) < 15:
+        if len(letters_only) < 20:
             return False
 
-        # Check for preserved word structure (spaces intact)
+        # If text has common question words, probably not a cipher
+        if any(word in text.lower() for word in ['what', 'who', 'where', 'when', 'why', 'how', 'the', 'and', 'is', 'are']):
+            return False
+
+        # Check for preserved word structure (spaces intact) and unusual letter frequency
         has_structure = ' ' in text
-        return has_structure and len(set(letters_only.lower())) > 10
+        vowels = sum(1 for c in letters_only.lower() if c in 'aeiou')
+        vowel_ratio = vowels / len(letters_only)
+
+        return has_structure and len(set(letters_only.lower())) > 10 and (vowel_ratio < 0.25 or vowel_ratio > 0.55)
 
     def _detect_atbash(self, text: str) -> bool:
         """Detect if text might be Atbash cipher (A=Z, B=Y, etc.)."""
-        # Atbash is just a special case of substitution
+        # Atbash is just a special case of substitution - only try if it looks like a cipher
         letters_only = re.sub(r'[^A-Za-z]', '', text)
-        return len(letters_only) >= 10
+        if len(letters_only) < 10:
+            return False
+
+        # Don't detect if it has common words or question patterns
+        if any(word in text.lower() for word in ['what', 'who', 'where', 'when', 'why', 'how', 'the', 'and', 'is', 'are']):
+            return False
+
+        # Only flag if it's mostly uppercase and doesn't have common words
+        mostly_caps = sum(1 for c in text if c.isupper()) / len(text) if len(text) > 0 else 0
+
+        if mostly_caps > 0.7:
+            common_words = {'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all',
+                           'can', 'her', 'was', 'one', 'our', 'out', 'has', 'have'}
+            text_lower = text.lower()
+            if not any(word in text_lower for word in common_words):
+                return True
+
+        return False
 
     def _detect_base64(self, text: str) -> bool:
         """Detect if text might be base64 encoded."""
@@ -206,6 +247,10 @@ class EscapeRoomSolver:
         if 'math_puzzle' in puzzle_types:
             solutions.extend(self._solve_math(puzzle))
 
+        if 'word_riddle' in puzzle_types or 'riddle' in puzzle_types:
+            riddle_solutions = self._solve_riddle(puzzle)
+            solutions.extend(riddle_solutions)
+
         # If no specific solver found solution, provide general analysis
         if not solutions:
             solutions.append({
@@ -234,22 +279,36 @@ class EscapeRoomSolver:
         best_score = 0
         best_decoded = ""
 
-        # Common English words to check against
+        # Common English words and letter patterns
         common_words = {'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all',
-                       'can', 'her', 'was', 'one', 'our', 'out', 'has', 'have'}
+                       'can', 'her', 'was', 'one', 'our', 'out', 'has', 'have',
+                       'hello', 'world', 'code', 'key', 'open', 'door', 'exit'}
 
         for shift in range(26):
             decoded = self._caesar_shift(text, shift)
             decoded_lower = decoded.lower()
 
             # Score based on common words found
-            score = sum(1 for word in common_words if word in decoded_lower)
+            word_score = sum(1 for word in common_words if word in decoded_lower)
+
+            # Also score based on how "English-like" it looks (vowel ratio)
+            letters = re.sub(r'[^A-Za-z]', '', decoded)
+            if len(letters) > 0:
+                vowels = sum(1 for c in letters.lower() if c in 'aeiou')
+                vowel_ratio = vowels / len(letters)
+                # English typically has vowel ratio between 0.35 and 0.45
+                vowel_score = 1 if 0.30 <= vowel_ratio <= 0.50 else 0
+            else:
+                vowel_score = 0
+
+            score = word_score * 2 + vowel_score
 
             if score > best_score:
                 best_score = score
                 best_shift = shift
                 best_decoded = decoded
 
+        # If we found a reasonable English-looking result, return it
         if best_shift is not None and best_score > 0:
             solutions.append({
                 "label": f"Caesar Cipher (shift {best_shift})",
@@ -259,7 +318,7 @@ class EscapeRoomSolver:
                     f"Shift {best_shift} produces readable English text"
                 ],
                 "final_answer": best_decoded,
-                "confidence": min(0.95, best_score * 0.2),
+                "confidence": min(0.95, 0.5 + best_score * 0.15),
                 "hint_level_available": ["hint", "nudge", "full_explanation"]
             })
 
@@ -473,6 +532,65 @@ class EscapeRoomSolver:
                 "confidence": 0.95,
                 "hint_level_available": ["hint", "nudge", "full_explanation"]
             })
+
+        return solutions
+
+    def _solve_riddle(self, text: str) -> List[Dict[str, Any]]:
+        """Solve common riddles."""
+        solutions = []
+
+        # Common riddle patterns and answers
+        riddles = [
+            {
+                "keywords": ["keys", "locks", "space", "room", "enter"],
+                "answer": "KEYBOARD",
+                "explanation": "A keyboard has keys but no locks, space bar but no room, and you can enter (press Enter) but not go outside"
+            },
+            {
+                "keywords": ["wet", "dries"],
+                "answer": "TOWEL",
+                "explanation": "A towel gets wet while it dries you"
+            },
+            {
+                "keywords": ["hole", "swiss cheese", "less"],
+                "answer": "SWISS CHEESE",
+                "explanation": "The more holes (cheese removed), the less cheese there is"
+            },
+            {
+                "keywords": ["runs", "never walks", "mouth", "never talks", "bed", "never sleeps"],
+                "answer": "RIVER",
+                "explanation": "A river runs but never walks, has a mouth but never talks, has a bed but never sleeps"
+            },
+            {
+                "keywords": ["break", "use"],
+                "answer": "EGG",
+                "explanation": "You have to break an egg before you can use it"
+            },
+            {
+                "keywords": ["speak", "answer", "never asks"],
+                "answer": "ECHO",
+                "explanation": "An echo answers when you speak but never asks a question"
+            }
+        ]
+
+        text_lower = text.lower()
+
+        for riddle in riddles:
+            # Count how many keywords match
+            matches = sum(1 for keyword in riddle["keywords"] if keyword in text_lower)
+            if matches >= 3:  # If at least 3 keywords match
+                solutions.append({
+                    "label": "Riddle Solution",
+                    "steps": [
+                        "Analyze the riddle's key phrases",
+                        f"Identify matching characteristics: {', '.join(riddle['keywords'][:3])}",
+                        f"Apply lateral thinking to find the answer"
+                    ],
+                    "final_answer": riddle["answer"],
+                    "confidence": min(0.95, 0.6 + matches * 0.1),
+                    "hint_level_available": ["hint", "nudge", "full_explanation"]
+                })
+                break
 
         return solutions
 
