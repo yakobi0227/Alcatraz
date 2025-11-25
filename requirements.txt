@@ -1,0 +1,10 @@
+# Alcatraz - Escape Room Solver
+# Python dependencies
+
+# No external dependencies required for basic functionality
+# The solver uses only Python standard library:
+# - json
+# - re
+# - base64
+# - typing
+# - collections
