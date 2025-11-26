@@ -13,6 +13,8 @@ Alcatraz can analyze and solve:
 - **Anagrams**: Letter rearrangement puzzles
 - **Logic Puzzles**: Deductive reasoning challenges
 - **Wordplay**: Puns, homophones, double meanings
+- **Physical Props**: Combination locks, physical puzzles
+- **Lock Strategies**: Complete guides for solving 3-digit and 4-digit combination locks
 
 ## Installation
 
@@ -64,6 +66,17 @@ python3 escape_solver.py 'What comes next: 2, 4, 6, 8, ?' '' 'full'
 ```bash
 python3 escape_solver.py "I have keys but no locks. I have space but no room. You can enter but can't go outside. What am I?" "Mysterious voice" "nudge"
 ```
+
+**Combination Lock:**
+```bash
+python3 escape_solver.py "4-digit combination lock" "" "full"
+```
+
+**Comprehensive Lock Guide:**
+```bash
+python3 combination_lock_guide.py
+```
+This provides a complete guide with 8 strategies for solving combination locks.
 
 ### Running Examples
 
@@ -135,6 +148,8 @@ Alcatraz returns a JSON object with:
 | **Pattern** | Number sequences | `2, 4, 6, ?` → `8` |
 | **Riddle** | Word-based logic | "What has keys but no locks?" |
 | **Anagram** | Letter rearrangement | "SILENT" → "LISTEN" |
+| **Combination Lock** | Physical lock strategies | 4-digit lock → 8 solving strategies |
+| **Physical Props** | Escape room objects | Locks, safes, mechanisms |
 
 ## Hint Levels
 
@@ -150,6 +165,33 @@ Alcatraz returns a JSON object with:
 4. **Confidence Scoring**: Ranks solutions by likelihood
 5. **Hint Generation**: Creates progressive hints based on puzzle type
 6. **Prediction**: Suggests what might come next in the escape room
+
+## Special Features
+
+### Combination Lock Guide
+
+The `combination_lock_guide.py` provides an exhaustive, print-ready guide for solving physical combination locks:
+
+**8 Comprehensive Strategies:**
+1. **Clue Hunting** - Find numbers in dates, clocks, books, artwork, etc.
+2. **Pattern Recognition** - Count objects, identify sequences
+3. **Previous Puzzle Solutions** - Connect to earlier answers
+4. **Theme-Based Codes** - Use room theme for context
+5. **Common Default Codes** - Try frequently-used combinations
+6. **Advanced Lock Techniques** - Listening, feeling, UV light, magnets
+7. **Systematic Brute Force** - Last resort methodical approach
+8. **Teamwork & Organization** - Efficient team coordination
+
+Run the guide:
+```bash
+python3 combination_lock_guide.py
+```
+
+This is perfect for:
+- Learning escape room solving techniques
+- Teaching puzzle-solving strategies
+- Understanding lock mechanisms
+- Training escape room game masters
 
 ## Development
 

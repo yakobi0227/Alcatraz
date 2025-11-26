@@ -27,6 +27,8 @@ class EscapeRoomSolver:
             'anagram': self._detect_anagram,
             'pattern': self._detect_pattern,
             'wordplay': self._detect_wordplay,
+            'combination_lock': self._detect_combination_lock,
+            'physical_prop': self._detect_physical_prop,
         }
 
     def solve(self, puzzle: str, context: str = "", hint_level: str = "hint") -> Dict[str, Any]:
@@ -179,6 +181,25 @@ class EscapeRoomSolver:
                             'double meaning', 'rhyme']
         return any(keyword in text.lower() for keyword in wordplay_keywords)
 
+    def _detect_combination_lock(self, text: str) -> bool:
+        """Detect if puzzle involves a combination lock."""
+        lock_keywords = ['combination', 'lock', 'code', 'dial', 'padlock',
+                        'digit lock', 'number lock', 'wheels', 'tumbler']
+        text_lower = text.lower()
+        has_lock_keyword = any(keyword in text_lower for keyword in lock_keywords)
+
+        # Also detect if text describes a digit pattern (like "4-digit code")
+        digit_pattern = bool(re.search(r'\d+[-\s]?digit', text_lower))
+
+        return has_lock_keyword or digit_pattern
+
+    def _detect_physical_prop(self, text: str) -> bool:
+        """Detect if puzzle involves physical escape room props."""
+        prop_keywords = ['lock', 'key', 'box', 'safe', 'chest', 'door', 'drawer',
+                        'prop', 'object', 'item', 'mechanism', 'device']
+        text_lower = text.lower()
+        return any(keyword in text_lower for keyword in prop_keywords)
+
     # Solution Generators
 
     def _generate_solutions(self, puzzle: str, puzzle_types: List[str]) -> List[Dict[str, Any]]:
@@ -205,6 +226,9 @@ class EscapeRoomSolver:
 
         if 'math_puzzle' in puzzle_types:
             solutions.extend(self._solve_math(puzzle))
+
+        if 'combination_lock' in puzzle_types or 'physical_prop' in puzzle_types:
+            solutions.extend(self._solve_combination_lock(puzzle))
 
         # If no specific solver found solution, provide general analysis
         if not solutions:
@@ -473,6 +497,107 @@ class EscapeRoomSolver:
                 "confidence": 0.95,
                 "hint_level_available": ["hint", "nudge", "full_explanation"]
             })
+
+        return solutions
+
+    def _solve_combination_lock(self, text: str) -> List[Dict[str, Any]]:
+        """Provide strategies for solving combination lock puzzles."""
+        solutions = []
+
+        # Extract any numbers mentioned in the puzzle
+        numbers = re.findall(r'\d+', text)
+        text_lower = text.lower()
+
+        # Determine lock type from description
+        lock_digits = None
+        if '4-digit' in text_lower or '4 digit' in text_lower:
+            lock_digits = 4
+        elif '3-digit' in text_lower or '3 digit' in text_lower:
+            lock_digits = 3
+        elif numbers:
+            # Try to infer from numbers found
+            lock_digits = max(len(n) for n in numbers) if numbers else 4
+
+        # Build comprehensive solving strategy
+        steps = [
+            "PHYSICAL LOCK SOLVING STRATEGIES:",
+            "",
+            "1. CLUE HUNTING - Look around the room for:",
+            "   • Written numbers on walls, posters, or objects",
+            "   • Dates (birth dates, historical dates, years)",
+            "   • Times on clocks (convert to digits: 3:45 → 0345 or 345)",
+            "   • Page numbers in books",
+            "   • Numbers in paintings or photographs",
+            "   • Mathematical equations that produce answers",
+            "",
+            "2. PREVIOUS PUZZLE SOLUTIONS:",
+            "   • Check if earlier puzzles revealed numbers",
+            "   • Look for patterns in previously found codes",
+            "   • Consider concatenating multiple smaller numbers",
+            "",
+            "3. WORDPLAY & CONVERSION:",
+            "   • Letter to number (A=1, B=2, etc.)",
+            "   • Phone keypad conversion (ABC=2, DEF=3, etc.)",
+            "   • Roman numerals to digits",
+            "   • Word lengths forming numbers",
+            "",
+            "4. PATTERN RECOGNITION:",
+            "   • Count specific objects in the room",
+            "   • Number of items in groups (books, keys, pictures)",
+            "   • Sequential patterns (1234, 0000, 1111)",
+            "   • Fibonacci sequence, prime numbers, etc.",
+            "",
+            "5. COMMON DEFAULT CODES (try these if desperate):",
+            "   • 0000, 1234, 4321",
+            "   • 1111, 2222, etc.",
+            "   • Current year (2025, etc.)",
+            "",
+            "6. BRUTE FORCE (last resort):",
+        ]
+
+        if lock_digits == 4:
+            steps.append("   • 4-digit lock: 10,000 combinations (0000-9999)")
+            steps.append("   • Systematic approach: Start at 0000, try every combo")
+            steps.append("   • Time estimate: ~2-4 hours if testing manually")
+            final_answer = "4-digit combination lock - Use clue hunting and pattern recognition first"
+        elif lock_digits == 3:
+            steps.append("   • 3-digit lock: 1,000 combinations (000-999)")
+            steps.append("   • More feasible to brute force: ~15-30 minutes")
+            final_answer = "3-digit combination lock - Check room for clues or try common patterns"
+        else:
+            steps.append("   • Determine number of digits first")
+            final_answer = "Combination lock puzzle - Identify lock type and hunt for clues"
+
+        steps.extend([
+            "",
+            "7. ADVANCED TECHNIQUES:",
+            "   • UV light: Check for hidden numbers under blacklight",
+            "   • Magnets: Some locks have magnetic indicators",
+            "   • Listen for clicks: Some locks click at correct digits",
+            "   • Feel for resistance: Slight resistance when digit is correct",
+            "",
+            "8. THEME CONNECTION:",
+            "   • Consider the escape room theme (prison, mystery, sci-fi)",
+            "   • Famous numbers from that theme",
+            "   • Story-relevant dates or codes",
+        ])
+
+        # Add any numbers found in the text
+        if numbers:
+            steps.append("")
+            steps.append(f"NUMBERS FOUND IN PUZZLE TEXT: {', '.join(numbers)}")
+            steps.append("These might be:")
+            steps.append("  • The direct combination")
+            steps.append("  • Part of the combination")
+            steps.append("  • Clues to find the real combination")
+
+        solutions.append({
+            "label": "Combination Lock Strategy",
+            "steps": steps,
+            "final_answer": final_answer,
+            "confidence": 0.85,
+            "hint_level_available": ["hint", "nudge", "full_explanation"]
+        })
 
         return solutions
 

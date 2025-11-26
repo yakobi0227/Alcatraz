@@ -48,6 +48,12 @@ def test_puzzles():
             "puzzle": "If the code is 15 + 27 = ?, what is the combination?",
             "context": "Lock combination puzzle",
             "hint_level": "full"
+        },
+        {
+            "name": "4-Digit Combination Lock",
+            "puzzle": "4-digit combination lock with rotating wheels (0-9 on each wheel)",
+            "context": "Physical prop - needs code to unlock. Theme: General escape room",
+            "hint_level": "full"
         }
     ]
 
